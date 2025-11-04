@@ -90,11 +90,11 @@
             // clear form
             title = ""; author = ""; isbn = ""; pageCount = 0; publishYear = DateTime.Now.Year;
             selectedStatus = Status.Owned;
-            message = "✅ Book added.";
+            message = "Book added.";
         }
         catch (Exception ex)
         {
-            message = $"❌ Error: {ex.Message}";
+            message = $"Error: {ex.Message}";
         }
         finally
         {
