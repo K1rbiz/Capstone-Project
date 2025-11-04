@@ -1,9 +1,106 @@
 ﻿@page "/"
+@using Capstone_Project_v0._1.Data
+@using Capstone_Project_v0._1.Models
+@inject LibraryRepository Repo
 
-<div class="home-wrapper">
-    <h1>Welcome to Your Library</h1>
-    <p class="subtitle">Organize your books, track your reading, and grow your collection.</p>
+<PageTitle>Home</PageTitle>
+
+<div class="container mt-4">
+    <h2 class="mb-1">Capstone Library</h2>
+    <p class="text-muted">Quickly add books and manage your local library.</p>
+
+    <div class="card mb-4">
+        <div class="card-body">
+            <h5 class="card-title">Add a Book</h5>
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <label class="form-label">Title</label>
+                    <input class="form-control" @bind="title" placeholder="e.g., The Name of the Wind" />
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Author</label>
+                    <input class="form-control" @bind="author" placeholder="e.g., Patrick Rothfuss" />
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">ISBN</label>
+                    <input class="form-control" @bind="isbn" placeholder="optional" />
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Page Count</label>
+                    <input type="number" class="form-control" @bind="pageCount" min="1" />
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Publish Year</label>
+                    <input type="number" class="form-control" @bind="publishYear" min="0" />
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Add To</label>
+                    <select class="form-select" @bind="selectedStatus">
+                        <option value="@Status.Owned">Owned</option>
+                        <option value="@Status.WishList">Wishlist</option>
+                    </select>
+                </div>
+            </div>
+            <div class="mt-3">
+                <button class="btn btn-primary me-2" @onclick="AddBook" disabled="@isBusy">Add Book</button>
+                <span class="text-muted">@message</span>
+            </div>
+        </div>
+    </div>
 </div>
 
+@code {
+    // form fields
+    private string title = "";
+    private string author = "";
+    private string isbn = "";
+    private int pageCount = 0;
+    private int publishYear = @DateTime.Now.Year;
+    private Status selectedStatus = Status.Owned;
 
+    private bool isBusy = false;
+    private string message = "";
+    private string dbPath = Path.Combine(FileSystem.AppDataDirectory, "bookstore.db");
 
+    protected override void OnInitialized()
+    {
+        // no-op
+    }
+
+    private async Task AddBook()
+    {
+        if (string.IsNullOrWhiteSpace(title) || string.IsNullOrWhiteSpace(author))
+        {
+            message = "Please provide at least Title and Author.";
+            return;
+        }
+
+        isBusy = true; message = "Saving...";
+        try
+        {
+            await Repo.AddBookWithStatusAsync(
+                title: title.Trim(),
+                authorName: author.Trim(),
+                isbn: string.IsNullOrWhiteSpace(isbn) ? null : isbn.Trim(),
+                pageCount: Math.Max(pageCount, 0),
+                publishYear: publishYear,
+                status: selectedStatus
+            );
+
+            // clear form
+            title = ""; author = ""; isbn = ""; pageCount = 0; publishYear = DateTime.Now.Year;
+            selectedStatus = Status.Owned;
+            message = "✅ Book added.";
+        }
+        catch (Exception ex)
+        {
+            message = $"❌ Error: {ex.Message}";
+        }
+        finally
+        {
+            isBusy = false;
+        }
+    }
+
+    [Inject] NavigationManager Navigation { get; set; } = default!;
+}

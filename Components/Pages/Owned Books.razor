@@ -1,76 +1,98 @@
 ﻿@page "/Owned Books"
-<h3>Owned Books</h3>
+@using Capstone_Project_v0._1.Data
+@using Capstone_Project_v0._1.Models
+@inject LibraryRepository Repo
+@inject IJSRuntime JS
 
-@using System.Collections.Generic
+<PageTitle>Owned Books</PageTitle>
 
-<div class="form-section">
-    <input placeholder="Not Started" @bind="newBook.NotStarted" />
-    <input placeholder="Started" @bind="newBook.Started" />
-    <input placeholder="Date Started" @bind="newBook.DateStarted" />
-    <input placeholder="In Progress" @bind="newBook.InProgress" />
-    <input placeholder="Page Number" @bind="newBook.PageNumber" />
-    <input placeholder="Finished" @bind="newBook.Finished" />
-    <input placeholder="Finished Date" @bind="newBook.FinishedDate" />
-    <button @onclick="AddBook">Add</button>
+<div class="container mt-4">
+    <h2>Owned Books</h2>
+    <p class="text-muted">Books you currently own.</p>
+
+    <div class="mb-3">
+        <button class="btn btn-secondary me-2" @onclick="Refresh">Refresh</button>
+        <button class="btn btn-outline-danger" @onclick="ClearAll">Clear All</button>
+        <span class="ms-2 text-muted">@message</span>
+    </div>
+
+    @if (owned.Count == 0)
+    {
+        <div class="alert alert-info">You have no owned books yet. Add some from the Home page!</div>
+    }
+    else
+    {
+        <table class="table table-striped table-hover">
+            <thead class="table-light">
+                <tr>
+                    <th>Title</th>
+                    <th>Author</th>
+                    <th>ISBN</th>
+                    <th>Pages</th>
+                    <th>Year</th>
+                    <th>Status</th>
+                    <th style="width: 120px;">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var ub in owned)
+                {
+                    <tr>
+                        <td>@ub.Book?.Title</td>
+                        <td>@ub.Book?.AuthorName</td>
+                        <td>@ub.Book?.ISBN</td>
+                        <td>@ub.Book?.PageCount</td>
+                        <td>@ub.Book?.PublishYear</td>
+                        <td>@ub.Status</td>
+                        <td>
+                            <button class="btn btn-sm btn-outline-danger"
+                                    @onclick="() => Remove(ub)">
+                                Remove
+                            </button>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+
+    <div class="mt-3 small text-muted">
+        Database: @dbPath
+    </div>
 </div>
 
-<table class="owned-books-table">
-    <thead>
-        <tr>
-            <th>Not Started</th>
-            <th>Started</th>
-            <th>Date Started</th>
-            <th>In Progress</th>
-            <th>Page Number</th>
-            <th>Finished</th>
-            <th>Finished Date</th>
-            <th>Actions</th>
-        </tr>
-    </thead>
-    <tbody>
-        @foreach (var book in books)
-        {
-            <tr>
-                <td>@book.NotStarted</td>
-                <td>@book.Started</td>
-                <td>@book.DateStarted</td>
-                <td>@book.InProgress</td>
-                <td>@book.PageNumber</td>
-                <td>@book.Finished</td>
-                <td>@book.FinishedDate</td>
-                <td>
-                    <button @onclick="() => RemoveBook(book)">Remove</button>
-                </td>
-            </tr>
-        }
-    </tbody>
-</table>
-
 @code {
-   
-    public class BookRow
+    private List<UserBook> owned = new();
+    private string dbPath = Path.Combine(FileSystem.AppDataDirectory, "bookstore.db");
+    private string message = "";
+
+    protected override async Task OnInitializedAsync()
     {
-        public string NotStarted { get; set; } = "";
-        public string Started { get; set; } = "";
-        public string DateStarted { get; set; } = "";
-        public string InProgress { get; set; } = "";
-        public string PageNumber { get; set; } = "";
-        public string Finished { get; set; } = "";
-        public string FinishedDate { get; set; } = "";
+        await Refresh();
     }
 
-    private List<BookRow> books = new List<BookRow>();
-    private BookRow newBook = new BookRow();
-
-    private void AddBook()
+    private async Task Refresh()
     {
-        books.Add(newBook);
-        newBook = new BookRow(); 
+        owned = await Repo.GetOwnedAsync();
+        message = $"Loaded {owned.Count} book(s).";
+        StateHasChanged();
     }
 
-    private void RemoveBook(BookRow book)
+    private async Task ClearAll()
     {
-        books.Remove(book);
+        await Repo.ClearAllAsync();
+        owned.Clear();
+        message = "🗑️ All owned books cleared.";
+    }
+
+    private async Task Remove(UserBook ub)
+    {
+        // optional confirm dialog
+        bool ok = await JS.InvokeAsync<bool>("confirm",
+            $"Remove \"{ub.Book?.Title}\" from Owned? This may also delete the book if nothing else references it.");
+        if (!ok) return;
+
+        await Repo.RemoveOwnedAsync(ub.OwnedBookID, deleteBookIfOrphan: true);
+        await Refresh();
     }
 }
-

@@ -72,4 +72,28 @@ public class LibraryRepository
         _context.Books.RemoveRange(_context.Books);
         await _context.SaveChangesAsync();
     }
+
+    public async Task RemoveOwnedAsync(int ownedBookId, bool deleteBookIfOrphan)
+    {
+        // Example implementation, adjust to your data access logic
+        var userBook = await _context.UserBooks.FindAsync(ownedBookId);
+        if (userBook != null)
+        {
+            _context.UserBooks.Remove(userBook);
+
+            if (deleteBookIfOrphan)
+            {
+                bool isOrphan = !_context.UserBooks.Any(ub => ub.BookID == userBook.BookID && ub.OwnedBookID != ownedBookId);
+                if (isOrphan)
+                {
+                    var book = await _context.Books.FindAsync(userBook.BookID);
+                    if (book != null)
+                    {
+                        _context.Books.Remove(book);
+                    }
+                }
+            }
+            await _context.SaveChangesAsync();
+        }
+    }
 }
