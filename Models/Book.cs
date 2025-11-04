@@ -10,13 +10,11 @@ namespace Capstone_Project_v0._1.Models
     public class Book
     {
         public int BookID { get; set; }
-        public int AuthorID { get; set; }
-        public int CategoryID { get; set; }
-        public int ISBN { get; set; }
         public string Title { get; set; } = string.Empty;
+        public string AuthorName { get; set; } = string.Empty;
+        public string ISBN { get; set; } = string.Empty;
         public int PageCount { get; set; }
-        public DateTime PublishYear { get; set; }
-        public DateTime DateAdded { get; set; }
-
+        public int PublishYear { get; set; }
+        public DateTime DateAdded { get; set; } = DateTime.UtcNow;
     }
 }
