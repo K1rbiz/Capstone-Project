@@ -1,7 +1,76 @@
 ﻿@page "/Owned Books"
 <h3>Owned Books</h3>
 
-@code
-{
+@using System.Collections.Generic
 
+<div class="form-section">
+    <input placeholder="Not Started" @bind="newBook.NotStarted" />
+    <input placeholder="Started" @bind="newBook.Started" />
+    <input placeholder="Date Started" @bind="newBook.DateStarted" />
+    <input placeholder="In Progress" @bind="newBook.InProgress" />
+    <input placeholder="Page Number" @bind="newBook.PageNumber" />
+    <input placeholder="Finished" @bind="newBook.Finished" />
+    <input placeholder="Finished Date" @bind="newBook.FinishedDate" />
+    <button @onclick="AddBook">Add</button>
+</div>
+
+<table class="owned-books-table">
+    <thead>
+        <tr>
+            <th>Not Started</th>
+            <th>Started</th>
+            <th>Date Started</th>
+            <th>In Progress</th>
+            <th>Page Number</th>
+            <th>Finished</th>
+            <th>Finished Date</th>
+            <th>Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var book in books)
+        {
+            <tr>
+                <td>@book.NotStarted</td>
+                <td>@book.Started</td>
+                <td>@book.DateStarted</td>
+                <td>@book.InProgress</td>
+                <td>@book.PageNumber</td>
+                <td>@book.Finished</td>
+                <td>@book.FinishedDate</td>
+                <td>
+                    <button @onclick="() => RemoveBook(book)">Remove</button>
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>
+
+@code {
+   
+    public class BookRow
+    {
+        public string NotStarted { get; set; } = "";
+        public string Started { get; set; } = "";
+        public string DateStarted { get; set; } = "";
+        public string InProgress { get; set; } = "";
+        public string PageNumber { get; set; } = "";
+        public string Finished { get; set; } = "";
+        public string FinishedDate { get; set; } = "";
+    }
+
+    private List<BookRow> books = new List<BookRow>();
+    private BookRow newBook = new BookRow();
+
+    private void AddBook()
+    {
+        books.Add(newBook);
+        newBook = new BookRow(); 
+    }
+
+    private void RemoveBook(BookRow book)
+    {
+        books.Remove(book);
+    }
 }
+
