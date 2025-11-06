@@ -1,18 +1,1 @@
-.home-wrapper {
-    background-color: #000000;
-    color: #ffffff;
-    padding: 3rem 1rem;
-    text-align: center;
-    min-height: 100vh;
-    font-family: 'Segoe UI', sans-serif;
-}
 
-    .home-wrapper h1 {
-        font-size: 2.5rem;
-        margin-bottom: 1rem;
-    }
-
-.subtitle {
-    font-size: 1.2rem;
-    color: #dddddd;
-}
