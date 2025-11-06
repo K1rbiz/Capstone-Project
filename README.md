@@ -1,4 +1,32 @@
 # Capstone Project
 
-The idea of this project is to provide a private digital library for readers to use in order to track what books they are reading or books that they want to read as well as tracking books that they currently are reading, the pages that they have read and what page they are on, and what books are finished.
-The project scope is to create an interactive personal library in which an individual can manage a variety of books, such as books they are reading, books they want to read, and books that they have completed.  Features that will not be included are being able to buy books, being able to read the books as it is a list and tracking, and it’s only going to be in English (We don’t speak “Insert language here”)
+A lightweight .NET MAUI Blazor Hybrid Application that lets users track books they own, plan to buy, or are currently reading — all stored locally in an SQLite database.
+This project was build as part of our Capstone Project for our course ISP-3660
+## Features
+- Add, edit, and delete books from your collection.
+- Categorize books as "Owned", "To Buy", or "Reading".
+- View owned books in a visually appealing grid layout.
+- Persistent local storage using SQLite.
+- Clear all books with a single button.
+- Clear individual book entries.
+- Repository Pattern for clean architecture and maintainability.
+
+## Technologies Used
+- Frontend: .NET MAUI, Blazor, HTML, CSS
+- Backend: C#, SQLite, Entity Framework Core
+- Architecture: Repository Pattern + Dependency Injection
+- IDE Used: Visual Studio 2022
+
+## How it Works
+When the app launches, MauiProgram.cs:
+-Initializes SQLite (Batteries.Init()).
+-Ensures the database exists (EnsureCreated()).
+-Registers the LibraryContext and LibraryRepository for dependency injection.
+
+The Home page (Home.razor) uses @inject LibraryRepository Repo to:
+-Add new books with AddBookWithStatusAsync().
+-Link each new book to a user entry in UserBooks.
+
+The Owned Books Page (OwnedBooks.razor) retrieves and displays:
+-All books marked as "Owned" using GetBooksByStatusAsync().
+-Allows recdord removal or clearing all owned books.
