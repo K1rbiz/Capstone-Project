@@ -1,10 +1,11 @@
 # Capstone Project
+Our application is a personal book management system that helps users keep track of their reading habits and book collections.
 
 A lightweight .NET MAUI Blazor Hybrid Application that lets users track books they own, plan to buy, or are currently reading — all stored locally in an SQLite database.
 This project was build as part of our Capstone Project for our course ISP-3660
 ## Features
 - Add, edit, and delete books from your collection.
-- Categorize books as "Owned", "To Buy", or "Reading".
+- Categorize books as "WishList", "Owned", "Reading" or "Finished".
 - View owned books in a visually appealing grid layout.
 - Persistent local storage using SQLite.
 - Clear all books with a single button.
