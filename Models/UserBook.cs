@@ -13,7 +13,7 @@ public enum Status { WishList = 0, Owned = 1, Reading = 2, Finished = 3 }
 public class UserBook
 {
     public int OwnedBookID { get; set; } // Primary Key
-    public int UserID { get; set; } = 1; // Default user (no login system yet)
+    public int UserID { get; set; }
     public int BookID { get; set; } // Foreign Key to Book
     public Book? Book { get; set; } // Navigation property to Book
     public Status Status { get; set; } = Status.Owned; // Reading status

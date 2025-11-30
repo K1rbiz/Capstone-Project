@@ -1,8 +1,11 @@
-﻿@page "/Owned Books"
+﻿@page "/owned"
 @using Capstone_Project_v0._1.Data
 @using Capstone_Project_v0._1.Models
-@inject LibraryRepository Repo
+@inject Capstone_Project_v0._1.Data.LibraryRepository Repo
 @inject IJSRuntime JS
+@inject NavigationManager Nav
+@inject Capstone_Project_v0._1.Services.UserSessionState Session
+
 
 <PageTitle>Owned Books</PageTitle>
 
@@ -74,20 +77,28 @@
 </div>
 
 @code {
-    // List that stores all owned book records loaded from the database
     private List<UserBook> owned = new();
-    // Local database file path
     private string dbPath = Path.Combine(FileSystem.AppDataDirectory, "bookstore.db");
-    // Message displayed under toolbar buttons (status, confirmation, etc.)
     private string message = "";
 
-    // Called automatically when the page is first loaded
     protected override async Task OnInitializedAsync()
     {
-        await Refresh();
+        if (!Session.IsAuthenticated)
+        {
+            Nav.NavigateTo("/login", true);
+            return;
+        }
+
+        try
+        {
+            await Refresh();
+        }
+        catch (Exception ex)
+        {
+            message = $"Error loading owned books: {ex.Message}";
+        }
     }
 
-    // Refreshes the Owned Books list from the repository
     private async Task Refresh()
     {
         owned = await Repo.GetOwnedAsync();
@@ -95,22 +106,19 @@
         StateHasChanged();
     }
 
-    // Clears all data (removes all books and owned links)
     private async Task ClearAll()
     {
-        // optional confirm dialog
         bool ok = await JS.InvokeAsync<bool>("confirm",
             "Are you sure you want to clear ALL owned books? This action cannot be undone.");
         if (!ok) return;
+
         await Repo.ClearAllAsync();
         owned.Clear();
         message = "All owned books cleared.";
     }
 
-    // Removes a single owned book (and optionally deletes the Book record if orphaned)
     private async Task Remove(UserBook ub)
     {
-        // optional confirm dialog
         bool ok = await JS.InvokeAsync<bool>("confirm",
             $"Remove \"{ub.Book?.Title}\" from Owned? This may also delete the book if nothing else references it.");
         if (!ok) return;
