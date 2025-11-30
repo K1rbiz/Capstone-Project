@@ -44,7 +44,7 @@ public class LibraryRepository
     }
 
 
-    public async Task<int> AddBookWithStatusAsync(string title, string authorName, string? isbn, int pageCount, int publishYear, Status status)
+    public async Task<int> AddBookWithStatusAsync(string title, string authorName, string? isbn, int pageCount, DateTime dateAdded, Status status)
     {
         if (!_session.IsAuthenticated || !_session.UserId.HasValue)
             throw new InvalidOperationException("No user is logged in.");
@@ -58,8 +58,7 @@ public class LibraryRepository
             AuthorName = authorName,
             ISBN = isbn ?? string.Empty,
             PageCount = pageCount,
-            PublishYear = publishYear,
-            DateAdded = DateTime.UtcNow
+            DateAdded = dateAdded,
         };
         _context.Books.Add(book);
         await _context.SaveChangesAsync(); // BookID generated
@@ -71,8 +70,7 @@ public class LibraryRepository
             BookID = book.BookID,
             Status = status,
             CurrentPage = 0,
-            StartDate = DateTime.UtcNow,
-            DateAdded = DateTime.UtcNow
+            DateAdded = dateAdded
         };
         _context.UserBooks.Add(link);
         await _context.SaveChangesAsync();

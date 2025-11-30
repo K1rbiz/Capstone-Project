@@ -1,6 +1,7 @@
 ﻿using Capstone_Project_v0._1.Data;
 using Capstone_Project_v0._1.Services;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using SQLitePCL;
 
@@ -36,7 +37,11 @@ public static class MauiProgram
 
         // simple per-run user session
         builder.Services.AddSingleton<UserSessionState>();
+        // HttpClient factory for external APIs (Open Library)
+        builder.Services.AddHttpClient();
 
+        // Open Library book lookup service
+        builder.Services.AddScoped<BookLookupService>();
         var app = builder.Build();
 
         Batteries.Init();

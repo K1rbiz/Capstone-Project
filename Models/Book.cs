@@ -16,6 +16,6 @@ namespace Capstone_Project_v0._1.Models
         public string ISBN { get; set; } = string.Empty; // ISBN number
         public int PageCount { get; set; } // Number of pages
         public int PublishYear { get; set; } // Year of publication
-        public DateTime DateAdded { get; set; } = DateTime.UtcNow; // Date added to the library
+        public DateTime DateAdded { get; set; } // Date added to the library
     }
 }

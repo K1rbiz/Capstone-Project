@@ -18,7 +18,5 @@ public class UserBook
     public Book? Book { get; set; } // Navigation property to Book
     public Status Status { get; set; } = Status.Owned; // Reading status
     public int CurrentPage { get; set; } = 0; // Current page number
-    public DateTime? StartDate { get; set; } = DateTime.UtcNow; // Start date of reading
-    public DateTime? EndDate { get; set; } // End date of reading
-    public DateTime DateAdded { get; set; } = DateTime.UtcNow; // Date added to the library
+    public DateTime DateAdded { get; set; } // Date added to the library
 }
