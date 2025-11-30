@@ -1,7 +1,10 @@
-﻿@page "/home"
+﻿@page "/"
 @using Capstone_Project_v0._1.Data
 @using Capstone_Project_v0._1.Models
-@inject LibraryRepository Repo
+@inject Capstone_Project_v0._1.Data.LibraryRepository Repo
+@inject NavigationManager Nav
+@inject Capstone_Project_v0._1.Services.UserSessionState Session
+
 
 <PageTitle>Home</PageTitle>
 
@@ -61,40 +64,46 @@
 </div>
 
 @code {
-    // form fields
     private string title = "";
     private string author = "";
     private string isbn = "";
     private int pageCount = 0;
-    private int publishYear = @DateTime.Now.Year;
+    private int publishYear = DateTime.Now.Year;
     private Status selectedStatus = Status.Owned;
 
-    // Tracks if the form is processing a save action
     private bool isBusy = false;
-    // Message displayed under the button ("Book added", "Error", etc.)
     private string message = "";
-    // Path to the local SQLite database file
     private string dbPath = Path.Combine(FileSystem.AppDataDirectory, "bookstore.db");
 
     protected override void OnInitialized()
     {
-        // not used yet
+        // Block home if not logged in
+        if (!Session.IsAuthenticated)
+        {
+            Nav.NavigateTo("/login", true);
+        }
     }
 
-    // Method triggered when the "Add Book" button is clicked
     private async Task AddBook()
     {
-        // Simple validation: ensure Title and Author are not empty
+        if (!Session.IsAuthenticated)
+        {
+            message = "Please log in before adding books.";
+            Nav.NavigateTo("/login", true);
+            return;
+        }
+
         if (string.IsNullOrWhiteSpace(title) || string.IsNullOrWhiteSpace(author))
         {
             message = "Please provide at least Title and Author.";
             return;
         }
-        // Mark the form as busy (disables button) and show a saving message
-        isBusy = true; message = "Saving...";
+
+        isBusy = true;
+        message = "Saving...";
+
         try
         {
-            // Call repository to add a new Book + link to UserBook table
             await Repo.AddBookWithStatusAsync(
                 title: title.Trim(),
                 authorName: author.Trim(),
@@ -104,23 +113,22 @@
                 status: selectedStatus
             );
 
-            // clear form
-            title = ""; author = ""; isbn = ""; pageCount = 0; publishYear = DateTime.Now.Year;
+            title = "";
+            author = "";
+            isbn = "";
+            pageCount = 0;
+            publishYear = DateTime.Now.Year;
             selectedStatus = Status.Owned;
-            // Show success message
             message = "Book added.";
         }
         catch (Exception ex)
         {
-            // If something fails (e.g., DB issue), show the error message
             message = $"Error: {ex.Message}";
         }
         finally
         {
-            // Allow the button to be clicked again
             isBusy = false;
         }
     }
-
-    [Inject] NavigationManager Navigation { get; set; } = default!;
 }
+

@@ -1,5 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Capstone_Project_v0._1.Models;
+using Capstone_Project_v0._1.Services;
 
 namespace Capstone_Project_v0._1.Data;
 
@@ -11,8 +12,14 @@ public class LibraryRepository
 {
     // The private database context (connection to the SQLite DB)
     private readonly LibraryContext _context;
-    // Constructor: the context is injected by the system (dependency injection)
-    public LibraryRepository(LibraryContext context) => _context = context;
+    private readonly UserSessionState _session;
+
+    public LibraryRepository(LibraryContext context, UserSessionState session)
+    {
+        _context = context;
+        _session = session;
+    }
+
 
     //  BASIC CRUD OPERATIONS (for Books)
     // Retrieves all Book records from the database asynchronously
@@ -37,9 +44,13 @@ public class LibraryRepository
     }
 
 
-    // Add a new Book and link to default user with chosen status (Owned/Wishlist/etc.)
     public async Task<int> AddBookWithStatusAsync(string title, string authorName, string? isbn, int pageCount, int publishYear, Status status)
     {
+        if (!_session.IsAuthenticated || !_session.UserId.HasValue)
+            throw new InvalidOperationException("No user is logged in.");
+
+        var userId = _session.UserId.Value;
+
         // Step 1: Create a new Book record
         var book = new Book
         {
@@ -50,35 +61,39 @@ public class LibraryRepository
             PublishYear = publishYear,
             DateAdded = DateTime.UtcNow
         };
-        // Add and save to generate BookID (auto-increment key)
         _context.Books.Add(book);
         await _context.SaveChangesAsync(); // BookID generated
 
         // Step 2: Create a UserBook link (represents ownership or wishlist entry)
         var link = new UserBook
         {
-            UserID = 1, // Default user (no login system yet)
-            BookID = book.BookID, // Link to Book table
-            Status = status, // Enum (Owned, Wishlist, etc.)
+            UserID = userId,
+            BookID = book.BookID,
+            Status = status,
             CurrentPage = 0,
             StartDate = DateTime.UtcNow,
             DateAdded = DateTime.UtcNow
         };
-        // Add the UserBook link and save
         _context.UserBooks.Add(link);
         await _context.SaveChangesAsync();
         return book.BookID;
     }
 
-    // Query list by status (Owned, Wishlist, Reading, Finished)
+
     public async Task<List<UserBook>> GetByStatusAsync(Status status)
     {
+        if (!_session.IsAuthenticated || !_session.UserId.HasValue)
+            throw new InvalidOperationException("No user is logged in.");
+
+        var userId = _session.UserId.Value;
+
         return await _context.UserBooks
-            .Include(ub => ub.Book) // Joins each UserBook with its related Book
-            .Where(ub => ub.Status == status) // Filters by the chosen Status
-            .OrderBy(ub => ub.Book!.Title) // Sorts alphabetically by Book Title
+            .Include(ub => ub.Book)
+            .Where(ub => ub.Status == status && ub.UserID == userId)
+            .OrderBy(ub => ub.Book!.Title)
             .ToListAsync();
     }
+
 
     // Shortcuts
     public Task<List<UserBook>> GetOwnedAsync() => GetByStatusAsync(Status.Owned);

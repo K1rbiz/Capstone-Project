@@ -1,9 +1,11 @@
-﻿﻿
-@page "/Wishlist"
+﻿@page "/wishlist"
 @using Capstone_Project_v0._1.Data
 @using Capstone_Project_v0._1.Models
-@inject LibraryRepository Repo
+@inject Capstone_Project_v0._1.Data.LibraryRepository Repo
 @inject IJSRuntime JS
+@inject NavigationManager Nav
+@inject Capstone_Project_v0._1.Services.UserSessionState Session
+
 
 <PageTitle>Wishlist</PageTitle>
 
@@ -71,12 +73,24 @@
 
     protected override async Task OnInitializedAsync()
     {
-        await Refresh();
+        if (!Session.IsAuthenticated)
+        {
+            Nav.NavigateTo("/login", true);
+            return;
+        }
+
+        try
+        {
+            await Refresh();
+        }
+        catch (Exception ex)
+        {
+            message = $"Error loading wishlist: {ex.Message}";
+        }
     }
 
     private async Task Refresh()
     {
-        // If your repository exposes GetWishlistAsync(), this will load wishlist links.
         wishes = await Repo.GetWishlistAsync();
         message = $"Loaded {wishes.Count} book(s).";
         StateHasChanged();
@@ -88,8 +102,6 @@
             "Are you sure you want to clear ALL wishlist books? This action cannot be undone.");
         if (!ok) return;
 
-        // Mirrors Owned Books behavior (clears all data). Swap with a ClearWishlistAsync()
-        // if your repository provides a wishlist-only clear method.
         await Repo.ClearAllAsync();
         wishes.Clear();
         message = "All wishlist books cleared.";
@@ -101,8 +113,9 @@
             $"Remove \"{ub.Book?.Title}\" from Wishlist? This may also delete the book if nothing else references it.");
         if (!ok) return;
 
-        // Reuses the existing removal method signature used on the Owned page.
         await Repo.RemoveOwnedAsync(ub.OwnedBookID, deleteBookIfOrphan: true);
         await Refresh();
     }
+}
+
 }
