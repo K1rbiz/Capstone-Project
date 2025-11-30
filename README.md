@@ -23,6 +23,7 @@ When the app launches, MauiProgram.cs:
 - Initializes SQLite (Batteries.Init()).
 - Ensures the database exists (EnsureCreated()).
 - Registers the LibraryContext and LibraryRepository for dependency injection.
+- Utilizes SecureStorage.Default.SetAsync(idKey, newUserId.ToString()); to store user ID's.
 
 The Home page (Home.razor) uses @inject LibraryRepository Repo to:
 - Add new books with AddBookWithStatusAsync().
@@ -32,18 +33,22 @@ The Home page (Home.razor) uses @inject LibraryRepository Repo to:
 The Owned Books Page (OwnedBooks.razor) retrieves and displays:
 - All books marked as "Owned" using GetOwnedAsync();
 - Allows recorded removal or clearing all owned books.
-- 
+- Retains list of "Owned" books.
 
 The Wishlist Books Page (Wishlist.razor) retrieves and displays:
 - All books marked as "Wishes" using GetWishlistAsync();
 - Allows recorded removal or clearing all owned books.
+- Retains list of "Wishlisted" books.
 
 The Login Page (Login.razor) 
 - Upon running the application it displays the login page.
 - Users can create new or login to existing profiles.
 - Passwords are stored locally through secure storage.
-- 
+- You cannot access the other pages whilst not logged in.
 
 The API Being used
 - We are consuming an API via HTML and code called "https://openlibrary.org/isbn/%7Bisbn%7D.json"
-- 
+- This API is a REST API done in swagger.
+- This allows us to look up books by ISBN and it will implement that data to the home page.
+- It grabs the author name, title, ISBN and page count.
+
