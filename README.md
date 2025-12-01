@@ -17,7 +17,7 @@ This project was build as part of our Capstone Project for our course ISP-3660
 - Backend: C#, SQLite, Entity Framework Core
 - Architecture: Repository Pattern + Dependency Injection
 - IDE Used: Visual Studio 2022
-- API Used: https://openlibrary.org/isbn/%7Bisbn%7D.json
+- API Used: https://openlibrary.org/developers/api
 
 ## How it Works
 When the app launches, MauiProgram.cs:
@@ -48,7 +48,7 @@ The Login Page (Login.razor)
 - You cannot access the other pages whilst not logged in.
 
 The API Being used
-- We are consuming an API via HTML and code called "https://openlibrary.org/isbn/%7Bisbn%7D.json"
+- We are consuming an API via HTML and code called "https://openlibrary.org/developers/api"
 - This API is a REST API done in swagger.
 - This allows us to look up books by ISBN and it will implement that data to the home page.
 - It grabs the author name, title, ISBN and page count.
