@@ -7,7 +7,7 @@ using System.Threading.Tasks;
     namespace Capstone_Project_v0._1.Models;
 
 //  Status enum representing the reading status of a book
-public enum Status { WishList = 0, Owned = 1, Reading = 2, Finished = 3 }
+public enum Status { WishList = 0, Owned = 1}
 
 //  UserBook model class representing the relationship between a user and a book
 public class UserBook
