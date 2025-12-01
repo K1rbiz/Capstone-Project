@@ -109,12 +109,14 @@
     private async Task ClearAll()
     {
         bool ok = await JS.InvokeAsync<bool>("confirm",
-            "Are you sure you want to clear ALL owned books? This action cannot be undone.");
+            "Are you sure you want to clear ALL of YOUR owned books? This action cannot be undone.");
         if (!ok) return;
 
-        await Repo.ClearAllAsync();
+        // Clear only this user's Owned entries, and delete orphaned Book records
+        await Repo.ClearStatusForCurrentUserAsync(Status.Owned, deleteOrphanBooks: true);
+
         owned.Clear();
-        message = "All owned books cleared.";
+        message = "Your owned books have been cleared.";
     }
 
     private async Task Remove(UserBook ub)

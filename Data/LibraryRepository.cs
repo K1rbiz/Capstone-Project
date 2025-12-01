@@ -97,15 +97,45 @@ public class LibraryRepository
     public Task<List<UserBook>> GetOwnedAsync() => GetByStatusAsync(Status.Owned);
     public Task<List<UserBook>> GetWishlistAsync() => GetByStatusAsync(Status.WishList);
 
-    // Deletes *all* records from both tables (used for demo resets)
-    public async Task ClearAllAsync()
+    public async Task ClearStatusForCurrentUserAsync(Status status, bool deleteOrphanBooks)
     {
-        // Delete from UserBooks first (depends on Books via FK)
-        _context.UserBooks.RemoveRange(_context.UserBooks);
-        // Then remove all Books
-        _context.Books.RemoveRange(_context.Books);
-        // Commit both deletions
+        if (!_session.IsAuthenticated || !_session.UserId.HasValue)
+            throw new InvalidOperationException("No user is logged in.");
+
+        var userId = _session.UserId.Value;
+
+        // Get all UserBook links for this user + status
+        var userLinks = await _context.UserBooks
+            .Where(ub => ub.UserID == userId && ub.Status == status)
+            .ToListAsync();
+
+        if (userLinks.Count == 0)
+            return;
+
+        // Collect the book IDs affected by this clear operation
+        var affectedBookIds = userLinks
+            .Select(ub => ub.BookID)
+            .Distinct()
+            .ToList();
+
+        // Remove the UserBook rows for this user/status
+        _context.UserBooks.RemoveRange(userLinks);
         await _context.SaveChangesAsync();
+
+        if (deleteOrphanBooks && affectedBookIds.Count > 0)
+        {
+            // Delete any books that are no longer referenced by ANY UserBook
+            var orphanBooks = await _context.Books
+                .Where(b => affectedBookIds.Contains(b.BookID) &&
+                            !_context.UserBooks.Any(ub => ub.BookID == b.BookID))
+                .ToListAsync();
+
+            if (orphanBooks.Count > 0)
+            {
+                _context.Books.RemoveRange(orphanBooks);
+                await _context.SaveChangesAsync();
+            }
+        }
     }
 
     // Removes a single owned record (UserBook) by its ID.
