@@ -53,3 +53,6 @@ The API Being used
 - This allows us to look up books by ISBN and it will implement that data to the home page.
 - It grabs the author name, title, ISBN and page count.
 
+## Additional information
+- Contains link to a google doc that outlines pretty much everything within the program.
+- https://docs.google.com/document/d/1R--iKIxpenbUE2g9bph6LHXYkb92veSlVSSCeh9gFFM/edit?usp=sharing
