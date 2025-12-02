@@ -5,10 +5,10 @@ A lightweight .NET MAUI Blazor Hybrid Application that lets users track books th
 This project was build as part of our Capstone Project for our course ISP-3660
 ## Features
 - Add, edit, and delete books from your collection.
-- Categorize books as "WishList", "Owned", "Reading" or "Finished".
+- Categorize books as "WishList", or "Owned"
 - View owned books in a visually appealing grid layout.
 - Persistent local storage using SQLite.
-- Clear all books with a single button.
+- Clear all books per status with a single button.
 - Clear individual book entries.
 - Repository Pattern for clean architecture and maintainability.
 
@@ -17,13 +17,14 @@ This project was build as part of our Capstone Project for our course ISP-3660
 - Backend: C#, SQLite, Entity Framework Core
 - Architecture: Repository Pattern + Dependency Injection
 - IDE Used: Visual Studio 2022
+- API Used: https://openlibrary.org/developers/api
 
 ## How it Works
 When the app launches, MauiProgram.cs:
 - Initializes SQLite (Batteries.Init()).
 - Ensures the database exists (EnsureCreated()).
 - Registers the LibraryContext and LibraryRepository for dependency injection.
-- Utilizes SecureStorage.Default.SetAsync(idKey, newUserId.ToString()); to store user ID's.
+- Utilizes SecureStorage to store user ID's and Passwords.
 
 The Home page (Home.razor) uses @inject LibraryRepository Repo to:
 - Add new books with AddBookWithStatusAsync().
@@ -47,7 +48,7 @@ The Login Page (Login.razor)
 - You cannot access the other pages whilst not logged in.
 
 The API Being used
-- We are consuming an API via HTML and code called "https://openlibrary.org/isbn/%7Bisbn%7D.json"
+- We are consuming an API via HTML and code called "https://openlibrary.org/developers/api"
 - This API is a REST API done in swagger.
 - This allows us to look up books by ISBN and it will implement that data to the home page.
 - It grabs the author name, title, ISBN and page count.
