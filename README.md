@@ -38,6 +38,7 @@ The Home page (Home.razor) uses @inject LibraryRepository Repo to:
 - Link each new book to a user entry in UserBooks.
 - Added ISBN lookup button and tab (Entering the ISBN of a book will fill in the tabs such as title and author etc...)
 - When trying to use ISBN lookup without an internet connection it will give you an error stating you are not connected.
+![ISBN no internet](image_2025-12-02_184142482.png)
 
 The Owned Books Page (OwnedBooks.razor) retrieves and displays:
 - All books marked as "Owned" using GetOwnedAsync();
