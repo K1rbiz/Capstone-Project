@@ -17,6 +17,7 @@ This project was build as part of our Capstone Project for our course ISP-3660
 - Clear all books per status with a single button.
 - Clear individual book entries.
 - Repository Pattern for clean architecture and maintainability.
+- Connectivity that shows an error when trying to add books via ISBN lookup when not connected to internet.
 
 ## Technologies Used
 - Frontend: .NET MAUI, Blazor, HTML, CSS
@@ -36,6 +37,7 @@ The Home page (Home.razor) uses @inject LibraryRepository Repo to:
 - Add new books with AddBookWithStatusAsync().
 - Link each new book to a user entry in UserBooks.
 - Added ISBN lookup button and tab (Entering the ISBN of a book will fill in the tabs such as title and author etc...)
+- When trying to use ISBN lookup without an internet connection it will give you an error stating you are not connected.
 
 The Owned Books Page (OwnedBooks.razor) retrieves and displays:
 - All books marked as "Owned" using GetOwnedAsync();
