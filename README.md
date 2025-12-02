@@ -1,8 +1,14 @@
 # Capstone Project
-Our application is a personal book management system that helps users keep track of their reading habits and book collections.
+Our application is a personal book management system that helps users keep track of their reading habits and book collections.  
+*When downloading and cloning the repository, be sure to change the Framework under this Windows Machine choice from net8.0 to net9.0-windows*
 
 A lightweight .NET MAUI Blazor Hybrid Application that lets users track books they own, plan to buy, or are currently reading — all stored locally in an SQLite database.
 This project was build as part of our Capstone Project for our course ISP-3660
+
+## Additional information
+- Contains link to a google doc that outlines pretty much everything within the program.
+- https://docs.google.com/document/d/1R--iKIxpenbUE2g9bph6LHXYkb92veSlVSSCeh9gFFM/edit?usp=sharing
+
 ## Features
 - Add, edit, and delete books from your collection.
 - Categorize books as "WishList", or "Owned"
@@ -52,7 +58,3 @@ The API Being used
 - This API is a REST API done in swagger.
 - This allows us to look up books by ISBN and it will implement that data to the home page.
 - It grabs the author name, title, ISBN and page count.
-
-## Additional information
-- Contains link to a google doc that outlines pretty much everything within the program.
-- https://docs.google.com/document/d/1R--iKIxpenbUE2g9bph6LHXYkb92veSlVSSCeh9gFFM/edit?usp=sharing
