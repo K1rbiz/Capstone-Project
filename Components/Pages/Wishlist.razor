@@ -1,5 +1,123 @@
-﻿<h3>Wishlist</h3>
+﻿@page "/wishlist"
+@using Capstone_Project_v0._1.Data
+@using Capstone_Project_v0._1.Models
+@inject Capstone_Project_v0._1.Data.LibraryRepository Repo
+@inject IJSRuntime JS
+@inject NavigationManager Nav
+@inject Capstone_Project_v0._1.Services.UserSessionState Session
+
+
+<PageTitle>Wishlist</PageTitle>
+
+<!-- Wishlist page layout -->
+<div class="container mt-4">
+    <h2>Wishlist</h2>
+    <p class="text-muted">Books you’d like to get.</p>
+
+    <!-- Toolbar -->
+    <div class="mb-3">
+        <button class="btn btn-secondary me-2" @onclick="Refresh">Refresh</button>
+        <button class="btn btn-outline-danger" @onclick="ClearAll">Clear All</button>
+        <span class="ms-2 text-muted">@message</span>
+    </div>
+
+    @if (wishes.Count == 0)
+    {
+        <div class="alert alert-info">Your wishlist is empty. Add some from the Home page!</div>
+    }
+    else
+    {
+        <table class="table table-striped table-hover">
+            <thead class="table-light">
+                <tr>
+                    <th>Title</th>
+                    <th>Author</th>
+                    <th>ISBN</th>
+                    <th>Pages</th>
+                    <th>Year</th>
+                    <th>Status</th>
+                    <th style="width: 120px;">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var ub in wishes)
+                {
+                    <tr>
+                        <td>@ub.Book?.Title</td>
+                        <td>@ub.Book?.AuthorName</td>
+                        <td>@ub.Book?.ISBN</td>
+                        <td>@ub.Book?.PageCount</td>
+                        <td>@ub.Book?.DateAdded</td>
+                        <td>@ub.Status</td>
+                        <td>
+                            <button class="btn btn-sm btn-outline-danger"
+                                    @onclick="() => Remove(ub)">
+                                Remove
+                            </button>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+
+    <div class="mt-3 small text-muted">
+        Database: @dbPath
+    </div>
+</div>
 
 @code {
+    private List<UserBook> wishes = new();
+    private string dbPath = Path.Combine(FileSystem.AppDataDirectory, "bookstore.db");
+    private string message = "";
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (!Session.IsAuthenticated)
+        {
+            Nav.NavigateTo("/login", true);
+            return;
+        }
+
+        try
+        {
+            await Refresh();
+        }
+        catch (Exception ex)
+        {
+            message = $"Error loading wishlist: {ex.Message}";
+        }
+    }
+
+    private async Task Refresh()
+    {
+        wishes = await Repo.GetWishlistAsync();
+        message = $"Loaded {wishes.Count} book(s).";
+        StateHasChanged();
+    }
+
+    private async Task ClearAll()
+    {
+        bool ok = await JS.InvokeAsync<bool>("confirm",
+            "Are you sure you want to clear ALL of YOUR wishlist books? This action cannot be undone.");
+        if (!ok) return;
+
+        await Repo.ClearStatusForCurrentUserAsync(Status.WishList, deleteOrphanBooks: true);
+
+        wishes.Clear();
+        message = "Your wishlist books have been cleared.";
+    }
+
+
+    private async Task Remove(UserBook ub)
+    {
+        bool ok = await JS.InvokeAsync<bool>("confirm",
+            $"Remove \"{ub.Book?.Title}\" from Wishlist? This may also delete the book if nothing else references it.");
+        if (!ok) return;
+
+        await Repo.RemoveOwnedAsync(ub.OwnedBookID, deleteBookIfOrphan: true);
+        await Refresh();
+    }
+}
 
 }

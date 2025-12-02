@@ -1,0 +1,259 @@
+﻿@page "/login"
+@using Capstone_Project_v0._1.Services
+@using Microsoft.Maui.Storage
+@inject UserSessionState Session
+@inject NavigationManager Navigation
+
+<h3>Login</h3>
+
+<EditForm Model="@_model" OnValidSubmit="@HandleValidSubmit">
+    <DataAnnotationsValidator />
+    <ValidationSummary />
+
+    <div class="form-group">
+        <label for="username">Username</label>
+        <InputText id="username" class="form-control" @bind-Value="_model.Username" />
+        <ValidationMessage For="@(() => _model.Username)" />
+    </div>
+
+    <div class="form-group" style="margin-top:0.75rem;">
+        <label for="password">Password</label>
+        <InputText id="password" class="form-control" type="password" @bind-Value="_model.Password" />
+        <ValidationMessage For="@(() => _model.Password)" />
+    </div>
+
+    <div style="margin-top:1rem;">
+        <button type="submit" class="btn btn-primary" disabled="@_isSubmitting">
+            @(_isSubmitting ? "Signing in..." : "Sign in / Create account")
+        </button>
+    </div>
+</EditForm>
+
+@if (!string.IsNullOrWhiteSpace(_errorMessage))
+{
+    <div class="alert alert-danger" style="margin-top:1rem;">@_errorMessage</div>
+}
+
+@if (_isAuthenticated)
+{
+    <div class="alert alert-success" style="margin-top:1rem;">
+        @(_isNewUser
+            ? "Account created and signed in. Redirecting..."
+            : "Signed in successfully. Redirecting...")
+</div>
+}
+
+@code {
+    // --------- component state ---------
+    private readonly LoginModel _model = new();
+    private bool _isSubmitting;
+    private bool _isAuthenticated;
+    private bool _isNewUser;
+    private string? _errorMessage;
+
+    //  -------- storage keys ---------
+    private const string NextUserIdKey = "auth_next_user_id";
+
+    // --------- component logic ---------
+    protected override void OnInitialized()
+    {
+        // Already logged in? Don't show login page.
+        if (Session.IsAuthenticated)
+        {
+            Navigation.NavigateTo("/", true);
+        }
+    }
+
+    // Handle form submission
+    private async Task HandleValidSubmit()
+    {   
+        // Reset state
+        _errorMessage = null;
+        _isAuthenticated = false;
+        _isNewUser = false;
+        _isSubmitting = true;
+
+        try
+        {
+            // Trim inputs
+            var username = _model.Username?.Trim() ?? string.Empty;
+            var password = _model.Password ?? string.Empty;
+
+            // Basic validation
+            if (string.IsNullOrWhiteSpace(username) || string.IsNullOrWhiteSpace(password))
+            {
+                _errorMessage = "Username and password are required.";
+                return;
+            }
+
+            // Attempt login or registration
+            var result = await LoginOrRegisterAsync(username, password);
+
+            // Handle result
+            if (!result.Success)
+            {
+                // Login failed
+                _errorMessage = result.ErrorMessage ?? "Login failed.";
+                return;
+            }
+
+            // Login succeeded
+            _isAuthenticated = true;
+            _isNewUser = result.IsNewUser;
+
+            // update in-memory session
+            Session.Login(username, result.UserId);
+
+            Navigation.NavigateTo("/", true);
+        }
+        catch (Exception ex)
+        {
+            // Unexpected error
+            _errorMessage = $"Login failed: {ex.Message}";
+        }
+        finally
+        {
+            // Reset submitting state
+            _isSubmitting = false;
+        }
+    }
+
+    // --------- auth helpers (in place of AuthService) ---------
+
+    // Simple model for login form
+    private sealed class LoginModel
+    {
+        // Username field
+        [System.ComponentModel.DataAnnotations.Required(ErrorMessage = "Username is required.")]
+        [System.ComponentModel.DataAnnotations.StringLength(64, ErrorMessage = "Username must be less than 64 characters.")]
+        public string? Username { get; set; }
+
+        // Password field
+        [System.ComponentModel.DataAnnotations.Required(ErrorMessage = "Password is required.")]
+        [System.ComponentModel.DataAnnotations.StringLength(128, ErrorMessage = "Password must be less than 128 characters.")]
+        public string? Password { get; set; }
+    }
+
+    // Result of an authentication attempt
+    private sealed class AuthResult
+    {
+        // Indicates success or failure
+        public bool Success { get; init; }
+        public string? ErrorMessage { get; init; }
+        public bool IsNewUser { get; init; }
+        public int UserId { get; init; }
+
+        // Success with user Id and new user flag
+        public static AuthResult Ok(int userId, bool isNewUser) =>
+            new AuthResult { Success = true, UserId = userId, IsNewUser = isNewUser };
+
+        // Failure with error message
+        public static AuthResult Fail(string message) =>
+            new AuthResult { Success = false, ErrorMessage = message };
+    }
+
+    // Perform login or registration
+    private async Task<AuthResult> LoginOrRegisterAsync(string username, string password)
+    {
+        // Normalize username for storage
+        var normalized = username.Trim().ToLowerInvariant();
+        var idKey = $"auth_user_{normalized}_id";
+        var pwdKey = $"auth_user_{normalized}_pwd";
+
+        // Check if user exists
+        var existingIdStr = await SecureStorage.Default.GetAsync(idKey);
+
+        // New user
+        if (string.IsNullOrEmpty(existingIdStr))
+        {
+            // New user: create account
+            var newUserId = await AllocateNewUserIdAsync();
+            // Create salt and hash
+            var salt = CreateSalt();
+            var hash = HashPassword(password, salt);
+            var stored = $"{salt}:{hash}";
+            // Store user Id and hashed password
+            await SecureStorage.Default.SetAsync(idKey, newUserId.ToString());
+            await SecureStorage.Default.SetAsync(pwdKey, stored);
+            // Return success
+            return AuthResult.Ok(newUserId, isNewUser: true);
+        }
+        else
+        {
+            // Existing user: validate password
+            var stored = await SecureStorage.Default.GetAsync(pwdKey);
+            if (string.IsNullOrEmpty(stored))
+                return AuthResult.Fail("Stored credentials are invalid.");
+            // Split stored value into salt and hash
+            var parts = stored.Split(':');
+            if (parts.Length != 2)
+                return AuthResult.Fail("Stored credentials are corrupted.");
+            
+            // Extract salt and stored hash
+            var salt = parts[0];
+            var storedHash = parts[1];
+
+            // Hash the provided password with the stored salt
+            var candidateHash = HashPassword(password, salt);
+
+            // Compare hashes
+            if (!SlowEquals(storedHash, candidateHash))
+            {
+                return AuthResult.Fail("Username is already in use, but the password is incorrect.");
+            }
+
+            // Parse user Id
+            if (!int.TryParse(existingIdStr, out var userId))
+                return AuthResult.Fail("Stored user Id is invalid.");
+
+            return AuthResult.Ok(userId, isNewUser: false);
+        }
+    }
+
+    // Allocate a new unique user Id
+    private async Task<int> AllocateNewUserIdAsync()
+    {
+        var current = await SecureStorage.Default.GetAsync(NextUserIdKey);
+        int nextId = 1;
+        if (!string.IsNullOrEmpty(current) && int.TryParse(current, out var parsed))
+        {
+            nextId = parsed;
+        }
+
+        // Increment and store the next user Id
+        var newNext = nextId + 1;
+        await SecureStorage.Default.SetAsync(NextUserIdKey, newNext.ToString());
+        return nextId;
+    }
+
+    // Create a random salt
+    private static string CreateSalt(int size = 16)
+    {
+        // Generate cryptographically secure random bytes
+        var bytes = new byte[size];
+        System.Security.Cryptography.RandomNumberGenerator.Fill(bytes);
+        return Convert.ToBase64String(bytes);
+    }
+
+    // Hash the password with the given salt
+    private static string HashPassword(string password, string salt)
+    {
+        // Use SHA256 for hashing
+        using var sha = System.Security.Cryptography.SHA256.Create();
+        var data = System.Text.Encoding.UTF8.GetBytes(salt + ":" + password);
+        var hash = sha.ComputeHash(data);
+        return Convert.ToBase64String(hash);
+    }
+
+    // Constant-time comparison to prevent timing attacks (not really needed locally but cool to have)
+    private static bool SlowEquals(string a, string b)
+    {
+        if (a.Length != b.Length) return false;
+        int diff = 0;
+        for (int i = 0; i < a.Length; i++)
+        {
+            diff |= a[i] ^ b[i];
+        }
+        return diff == 0;
+    }
+}

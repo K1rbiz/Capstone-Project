@@ -1,27 +1,57 @@
-﻿using Microsoft.Extensions.Logging;
+﻿using Capstone_Project_v0._1.Data;
+using Capstone_Project_v0._1.Services;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
+using SQLitePCL;
 
-namespace Capstone_Project_v0._1
+namespace Capstone_Project_v0._1;
+
+public static class MauiProgram
 {
-    public static class MauiProgram
+    public static MauiApp CreateMauiApp()
     {
-        public static MauiApp CreateMauiApp()
-        {
-            var builder = MauiApp.CreateBuilder();
-            builder
-                .UseMauiApp<App>()
-                .ConfigureFonts(fonts =>
-                {
-                    fonts.AddFont("OpenSans-Regular.ttf", "OpenSansRegular");
-                });
+        var builder = MauiApp.CreateBuilder();
 
-            builder.Services.AddMauiBlazorWebView();
+        builder
+            .UseMauiApp<App>()
+            .ConfigureFonts(fonts =>
+            {
+                fonts.AddFont("OpenSans-Regular.ttf", "OpenSansRegular");
+                fonts.AddFont("OpenSans-Semibold.ttf", "OpenSansSemibold");
+            });
+
+        builder.Services.AddMauiBlazorWebView();
 
 #if DEBUG
-    		builder.Services.AddBlazorWebViewDeveloperTools();
-    		builder.Logging.AddDebug();
+        builder.Services.AddBlazorWebViewDeveloperTools();
+        builder.Logging.AddDebug();
 #endif
 
-            return builder.Build();
+        var dbPath = Path.Combine(FileSystem.AppDataDirectory, "bookstore.db");
+
+        builder.Services.AddDbContext<LibraryContext>(opt =>
+            opt.UseSqlite($"Data Source={dbPath}"));
+
+        builder.Services.AddScoped<LibraryRepository>();
+
+        // simple per-run user session
+        builder.Services.AddSingleton<UserSessionState>();
+        // HttpClient factory for external APIs (Open Library)
+        builder.Services.AddHttpClient();
+
+        // Open Library book lookup service
+        builder.Services.AddScoped<BookLookupService>();
+        var app = builder.Build();
+
+        Batteries.Init();
+
+        using (var scope = app.Services.CreateScope())
+        {
+            var ctx = scope.ServiceProvider.GetRequiredService<LibraryContext>();
+            ctx.Database.EnsureCreated();
         }
+
+        return app;
     }
 }

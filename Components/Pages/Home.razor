@@ -1,4 +1,184 @@
 ﻿@page "/"
+@using Capstone_Project_v0._1.Data
+@using Capstone_Project_v0._1.Models
+@inject Capstone_Project_v0._1.Data.LibraryRepository Repo
+@inject NavigationManager Nav
+@inject Capstone_Project_v0._1.Services.UserSessionState Session
+@inject Capstone_Project_v0._1.Services.BookLookupService BookLookup
 
-<h1>Welcome to your Personal Library Manager</h1>
+
+<PageTitle>Home</PageTitle>
+
+<!-- Main page layout -->
+<div class="container mt-4">
+    <h2 class="mb-1">Capstone Library</h2>
+    <p class="text-muted">Quickly add books and manage your local library.</p>
+
+    <!-- Card containing the book entry form -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <h5 class="card-title">Add a Book</h5>
+
+            <!-- The form fields are grouped in a responsive row layout -->
+            <div class="row g-3">
+                <!-- Title input -->
+                <div class="col-md-6">
+                    <label class="form-label">Title</label>
+                    <input class="form-control" @bind="title" placeholder="e.g., The Lord of the Rings" />
+                </div>
+                <!-- Author input -->
+                <div class="col-md-6">
+                    <label class="form-label">Author</label>
+                    <input class="form-control" @bind="author" placeholder="e.g., J. R. R. Tolkien" />
+                </div>
+                <!-- ISBN input -->
+                <div class="col-md-4">
+                    <label class="form-label">ISBN</label>
+                    <input class="form-control" @bind="isbn" placeholder="optional" />
+                    <div class="input-group">
+                        <input class="form-control" @bind="isbn" placeholder="optional" />
+                        <button class="btn btn-outline-secondary" type="button" @onclick="LookupIsbn" disabled="@isBusy">
+                            Lookup
+                        </button>
+                    </div>
+                </div>
+                <!-- Page count input -->
+                <div class="col-md-4">
+                    <label class="form-label">Page Count</label>
+                    <input type="number" class="form-control" @bind="pageCount" min="1" />
+                </div>
+                <!-- date added to library input -->
+                <div class="col-md-4">
+                    <label class="form-label">Date Added to Library</label>
+                    <input type="date" class="form-control" @bind="dateAdded"/>
+                </div>
+                <!-- Dropdown to select where the book should be added -->
+                <div class="col-md-4">
+                    <label class="form-label">Add To</label>
+                    <select class="form-select" @bind="selectedStatus">
+                        <option value="@Status.Owned">Owned</option>
+                        <option value="@Status.WishList">Wishlist</option>
+                    </select>
+                </div>
+            </div>
+            <!-- Submit section -->
+            <div class="mt-3">
+                <button class="btn btn-primary me-2" @onclick="AddBook" disabled="@isBusy">Add Book</button>
+                <span class="text-muted">@message</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    private string title = "";
+    private string author = "";
+    private string isbn = "";
+    private int pageCount = 0;
+    private DateTime dateAdded = DateTime.Today;
+    private Status selectedStatus = Status.Owned;
+
+    private bool isBusy = false;
+    private string message = "";
+    private string dbPath = Path.Combine(FileSystem.AppDataDirectory, "bookstore.db");
+
+    protected override void OnInitialized()
+    {
+        // Block home if not logged in
+        if (!Session.IsAuthenticated)
+        {
+            Nav.NavigateTo("/login", true);
+        }
+    }
+
+    private async Task AddBook()
+    {
+        if (!Session.IsAuthenticated)
+        {
+            message = "Please log in before adding books.";
+            Nav.NavigateTo("/login", true);
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(title) || string.IsNullOrWhiteSpace(author))
+        {
+            message = "Please provide at least Title and Author.";
+            return;
+        }
+
+        isBusy = true;
+        message = "Saving...";
+
+        try
+        {
+            await Repo.AddBookWithStatusAsync(
+                title: title.Trim(),
+                authorName: author.Trim(),
+                isbn: string.IsNullOrWhiteSpace(isbn) ? null : isbn.Trim(),
+                pageCount: Math.Max(pageCount, 0),
+                dateAdded: dateAdded.Date,
+                status: selectedStatus
+            );
+
+            title = "";
+            author = "";
+            isbn = "";
+            pageCount = 0;
+            dateAdded = dateAdded.Date;
+            selectedStatus = Status.Owned;
+            message = "Book added.";
+        }
+        catch (Exception ex)
+        {
+            message = $"Error: {ex.Message}";
+        }
+        finally
+        {
+            isBusy = false;
+        }
+    }
+    private async Task LookupIsbn()
+    {
+        if (string.IsNullOrWhiteSpace(isbn))
+        {
+            message = "Enter an ISBN first.";
+            return;
+        }
+
+        isBusy = true;
+        message = "Looking up ISBN...";
+
+        try
+        {
+            var result = await BookLookup.LookupByIsbnAsync(isbn);
+
+            if (result == null)
+            {
+                message = "Book not found from Open Library.";
+                return;
+            }
+
+            // Fill in the form with data from Open Library,
+            // but only overwrite fields that are currently empty/default.
+            if (string.IsNullOrWhiteSpace(title) && !string.IsNullOrWhiteSpace(result.Title))
+                title = result.Title;
+
+            if (string.IsNullOrWhiteSpace(author) && !string.IsNullOrWhiteSpace(result.AuthorName))
+                author = result.AuthorName;
+
+            if (pageCount == 0 && result.PageCount.HasValue)
+                pageCount = result.PageCount.Value;
+
+            message = "Book info loaded from Open Library.";
+        }
+        catch (Exception ex)
+        {
+            message = $"Error looking up ISBN: {ex.Message}";
+        }
+        finally
+        {
+            isBusy = false;
+        }
+    }
+}
 
