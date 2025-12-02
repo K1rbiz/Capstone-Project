@@ -5,7 +5,7 @@
 @inject NavigationManager Nav
 @inject Capstone_Project_v0._1.Services.UserSessionState Session
 @inject Capstone_Project_v0._1.Services.BookLookupService BookLookup
-
+@inject Capstone_Project_v0._1.Services.IConnectivityService Connectivity
 
 <PageTitle>Home</PageTitle>
 
@@ -145,6 +145,13 @@
             return;
         }
 
+        // check connectivity before doing any HTTP calls
+        if (!Connectivity.HasInternet())
+        {
+            message = "You are not connected to the internet. ISBN lookup requires an internet connection.";
+            return;
+        }
+
         isBusy = true;
         message = "Looking up ISBN...";
 
@@ -180,5 +187,6 @@
             isBusy = false;
         }
     }
+
 }
 

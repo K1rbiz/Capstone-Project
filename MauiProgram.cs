@@ -34,12 +34,13 @@ public static class MauiProgram
             opt.UseSqlite($"Data Source={dbPath}"));
 
         builder.Services.AddScoped<LibraryRepository>();
-
+       
         // simple per-run user session
         builder.Services.AddSingleton<UserSessionState>();
         // HttpClient factory for external APIs (Open Library)
         builder.Services.AddHttpClient();
-
+        // connectivity service
+        builder.Services.AddSingleton<IConnectivityService, ConnectivityService>();
         // Open Library book lookup service
         builder.Services.AddScoped<BookLookupService>();
         var app = builder.Build();
