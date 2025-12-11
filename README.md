@@ -2,7 +2,7 @@
 Our application is a personal book management system that helps users keep track of their reading habits and book collections.  
 *When downloading and cloning the repository, be sure to change the Framework under this Windows Machine choice from net8.0 to net9.0-windows*
 
-A lightweight .NET MAUI Blazor Hybrid Application that lets users track books they own, plan to buy, or are currently reading — all stored locally in an SQLite database.
+A lightweight .NET MAUI Blazor Hybrid Application that lets users track books they own or want to put on a wishlist  — all stored locally in an SQLite database.
 This project was build as part of our Capstone Project for our course ISP-3660
 
 ## Additional information
